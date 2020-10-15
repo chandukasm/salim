@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:salim/utils/colors.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:native_pdf_view/native_pdf_view.dart';
 
 final List<String> discretionList = [
   "Aerosol transmission of SARS-CoV-2 \nEvidence for probable aerosol transmission of SARS-CoV-2 in a poorly ventilated restaurant CDC USA",
@@ -165,32 +166,93 @@ class _OpenPDFState extends State<OpenPDF> {
   }
 
   String render_pdf = "";
+  PdfController _pdfController;
+  int _actualPageNumber = 1, _allPagesCount = 0;
+  bool isSampleDoc = true;
   @override
   void initState() {
+    _pdfController = PdfController(
+      document: PdfDocument.openAsset('assets/pdfs/${widget.pdf}'),
+    );
     super.initState();
-    print("PDF NAME ${widget.pdf}");
-    print('assets/pdfs/${widget.pdf}');
-    fromAsset('assets/pdfs/${widget.pdf}', widget.pdf).then((f) {
-      setState(() {
-        render_pdf = f.path;
-      });
-    });
+
+    // print("PDF NAME ${widget.pdf}");
+    // print('assets/pdfs/${widget.pdf}');
+    // fromAsset('assets/pdfs/${widget.pdf}', widget.pdf).then((f) {
+    //   setState(() {
+    //     render_pdf = f.path;
+    //   });
+    // });
+  }
+
+  @override
+  void dispose() {
+    _pdfController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.red,
-        title: Text("PDF"),
-      ),
-      body: render_pdf.isEmpty
-          ? Container(
-              child: Center(
-                child: CircularProgressIndicator(),
+        appBar: AppBar(
+          backgroundColor: AppColors.red,
+          title: Text("PDF"),
+          actions: <Widget>[
+            IconButton(
+              icon: Icon(Icons.navigate_before),
+              onPressed: () {
+                _pdfController.nextPage(
+                  curve: Curves.ease,
+                  duration: Duration(milliseconds: 100),
+                );
+              },
+            ),
+            Container(
+              alignment: Alignment.center,
+              child: Text(
+                '$_actualPageNumber/$_allPagesCount',
+                style: TextStyle(fontSize: 22),
               ),
+            ),
+            IconButton(
+              icon: Icon(Icons.navigate_next),
+              onPressed: () {
+                _pdfController.previousPage(
+                  curve: Curves.ease,
+                  duration: Duration(milliseconds: 100),
+                );
+              },
+            ),
+            IconButton(
+              icon: Icon(Icons.refresh),
+              onPressed: () {
+                if (isSampleDoc) {
+                  _pdfController.loadDocument(
+                      PdfDocument.openAsset('assets/pdfs/${widget.pdf}'));
+                } else {
+                  _pdfController.loadDocument(
+                      PdfDocument.openAsset('assets/pdfs/${widget.pdf}'));
+                }
+                isSampleDoc = !isSampleDoc;
+              },
             )
-          : PDFView(filePath: render_pdf),
-    );
+          ],
+        ),
+        body: PdfView(
+          documentLoader: Center(child: CircularProgressIndicator()),
+          pageLoader: Center(child: CircularProgressIndicator()),
+          controller: _pdfController,
+          onDocumentLoaded: (document) {
+            setState(() {
+              _actualPageNumber = 1;
+              _allPagesCount = document.pagesCount;
+            });
+          },
+          onPageChanged: (page) {
+            setState(() {
+              _actualPageNumber = page;
+            });
+          },
+        ));
   }
 }

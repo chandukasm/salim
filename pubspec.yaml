@@ -19,6 +19,7 @@ dependencies:
   # youtube_player_flutter: ^7.0.0+6
   # google_maps_flutter: ^0.5.30
   chewie: ^0.9.10
+  native_pdf_view: ^3.8.0
   video_player: ^0.10.11+2
   # image_picker: ^0.6.7+4
   cupertino_icons: ^0.1.3
